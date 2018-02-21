@@ -17,6 +17,7 @@ public class ClientWithChat
     final static int ServerPort = 1234;
     static int id = -1;
     static ArrayList<Integer> localClock = new ArrayList<Integer>();
+    static Queue<String> holdBackQueue = new LinkedList<String>();
     public static void main(String args[]) throws UnknownHostException, IOException 
     {
     	    DateFormat fordate = new SimpleDateFormat("yyyy/MM/dd");
@@ -34,7 +35,7 @@ public class ClientWithChat
         DataInputStream dis = new DataInputStream(s.getInputStream());
         DataOutputStream dos = new DataOutputStream(s.getOutputStream());
         
-        Queue<String> holdBackQueue = new LinkedList<String>();
+        
         
         /*
          * Each process keeps a sequence number for each other process (vector) v 
@@ -59,13 +60,13 @@ public class ClientWithChat
                      
                     try {
                     		localClock.set(id, localClock.get(id) + 1);
-                    		String s = clockToString();
+                    		String localClockStr = clockToString();
                         // write on the output stream
-                    		msg = "Process " + id + ";" + s + ";" + msg;
+                    		msg = "Process " + id + ";" + localClockStr + ";" + msg;
                         dos.writeUTF(msg);
                         // creating Date object
                         Date date = new Date();                
-                        System.out.println("Process " + id + " Message sent at " + fortime.format(date));
+                        System.out.println("Process " + id + " sent message at " + fortime.format(date));
                     } catch (IOException e) {
                         e.printStackTrace();
                     }
@@ -98,18 +99,26 @@ public class ClientWithChat
                         if (msg.startsWith("Process " + id)) {
                         		continue;
                         }
-                        //if (holdBackQueue.isEmpty()) {
+                        String[] strArr = msg.split(";");
+                        String senderId = strArr[0];
+                        String senderClockStr = strArr[1];
+                        String senderMsg = strArr[2];
+                        ArrayList<Integer> senderClock = getSenderClock(senderClockStr);
+                        boolean acceptable = isAcceptable(localClock, senderClock, msg);
+                        
+                        if (acceptable) {
 	                        Random rand = new Random();
 	                        int randomNum = rand.nextInt((max_delay - min_delay) + 1) + min_delay;
 	                        Thread.sleep(randomNum);
 	                        // creating Date object
 	                        Date date = new Date();
-	                        System.out.println("Message received at " + fortime.format(date));
-	                        
-	                        System.out.println(msg);
-                        //} else {
-                        	//	holdBackQueue.add(msg);
-                        //}
+	                        System.out.println("--------------");
+	                        System.out.println("Message received from " + senderId);
+	                        System.out.println(senderMsg);
+	                        System.out.println(fortime.format(date));
+	                        System.out.println("--------------");
+                        } 
+      
                     } catch (IOException | InterruptedException e) {
  
                         e.printStackTrace();
@@ -128,6 +137,32 @@ public class ClientWithChat
     			s += String.valueOf(localClock.get(i));
     		}
     		return s;
+    }
+    
+    public static ArrayList<Integer> getSenderClock(String senderClockStr) {
+    		ArrayList<Integer> rst = new ArrayList<Integer>();
+    		for (int i = 0; i < senderClockStr.length(); i++) {
+    			rst.add(Character.getNumericValue(senderClockStr.charAt(i)));
+    		}
+    		return rst;
+    }
+    
+    public static boolean isAcceptable(ArrayList<Integer> local, ArrayList<Integer> sender, String msg) {
+    		return true;
+//    		if (sender.get(id) < local.get(id) + 1)
+//    			return false;
+//    		if (local.get(id) + 1 == sender.get(id)) {
+//    			for (int i = 0; i < local.size(); i++) {
+//    				if (i == id)
+//    					continue;
+//    				if (sender.get(i) > local.get(i))
+//    					holdBackQueue.add(msg);
+//    				if (sender.get(i) < local.get(i))
+//    					return false;
+//    			}
+//    		}
+//    		local.set(id, local.get(id) + 1);
+//    		return true;
     }
     
 }

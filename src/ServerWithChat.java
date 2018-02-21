@@ -113,7 +113,7 @@ class ClientHandlerChat implements Runnable
                 // search for the recipient in the connected devices list.
                 // ar is the vector storing client of active users
                 String[] strArr = received.split(";");
-                String trueMessage = strArr[2];
+                String trueMessage = strArr[2]; // may not need
                 for (ClientHandlerChat mc : ServerWithChat.ar) 
                 {
                     // if the recipient is found, write on its
@@ -121,7 +121,8 @@ class ClientHandlerChat implements Runnable
                     if (mc.isloggedin==true) 
                     {
     
-                        mc.dos.writeUTF(this.name+" : "+trueMessage);
+//                        mc.dos.writeUTF(this.name+" : "+trueMessage);
+                    		mc.dos.writeUTF(received);
 //                        break;
                     }
                 }
