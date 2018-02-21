@@ -37,16 +37,7 @@ public class ClientWithChat
         
         
         
-        /*
-         * Each process keeps a sequence number for each other process (vector) v 
-         * When a message is received, 
-         * 		as expected (next sequence), accept 
-         * 		higher than expected, buffer in a queue 
-         * 		lower than expected, reject
-         * 
-         * If send(m1) → send(m2), then every recipient of both message m1 and m2 
-         * must “deliver” m1 before m2.
-         */
+        
         
         // sendMessage thread
         Thread sendMessage = new Thread(new Runnable() 
@@ -86,6 +77,7 @@ public class ClientWithChat
                 while (true) {
                     try {
                         // read the message sent to this client
+                    		
                         String msg = dis.readUTF();
                         
                         if (msg.startsWith("Initialize Process")) {                        	
@@ -99,14 +91,30 @@ public class ClientWithChat
                         if (msg.startsWith("Process " + id)) {
                         		continue;
                         }
+                        
+                        
                         String[] strArr = msg.split(";");
                         String senderId = strArr[0];
                         String senderClockStr = strArr[1];
                         String senderMsg = strArr[2];
                         ArrayList<Integer> senderClock = getSenderClock(senderClockStr);
-                        boolean acceptable = isAcceptable(localClock, senderClock, msg);
                         
-                        if (acceptable) {
+                        boolean accept = isAcceptable(localClock, senderClock, msg);
+                        boolean buffer = bufferable(localClock, senderClock);
+                        boolean reject = rejectable(localClock, senderClock);
+                        /*
+                         * Each process keeps a sequence number for each other process (vector) v 
+                         * When a message is received, 
+                         * 		as expected (next sequence), accept 
+                         * 		higher than expected, buffer in a queue 
+                         * 		lower than expected, reject
+                         * 
+                         * If send(m1) → send(m2), then every recipient of both message m1 and m2 
+                         * must “deliver” m1 before m2.
+                         */
+                        
+                        if (accept) {
+                        	   localClock.set(id, localClock.get(id) + 1);
 	                        Random rand = new Random();
 	                        int randomNum = rand.nextInt((max_delay - min_delay) + 1) + min_delay;
 	                        Thread.sleep(randomNum);
@@ -117,7 +125,11 @@ public class ClientWithChat
 	                        System.out.println(senderMsg);
 	                        System.out.println(fortime.format(date));
 	                        System.out.println("--------------");
-                        } 
+                        } else if (buffer) {
+                        		holdBackQueue.add(msg);
+                        } else if (reject) {
+                        		// do nothing
+                        }
       
                     } catch (IOException | InterruptedException e) {
  
@@ -148,21 +160,31 @@ public class ClientWithChat
     }
     
     public static boolean isAcceptable(ArrayList<Integer> local, ArrayList<Integer> sender, String msg) {
+    		if (local.get(id) + 1 == sender.get(id)) {
+    			for (int i = 0; i < local.size(); i++) {
+    				if (i == id)
+    					continue;
+    				if (sender.get(i) != local.get(i))
+    					return false;
+    			}
+    		}
+    		
     		return true;
-//    		if (sender.get(id) < local.get(id) + 1)
-//    			return false;
-//    		if (local.get(id) + 1 == sender.get(id)) {
-//    			for (int i = 0; i < local.size(); i++) {
-//    				if (i == id)
-//    					continue;
-//    				if (sender.get(i) > local.get(i))
-//    					holdBackQueue.add(msg);
-//    				if (sender.get(i) < local.get(i))
-//    					return false;
-//    			}
-//    		}
-//    		local.set(id, local.get(id) + 1);
-//    		return true;
     }
+    public static boolean bufferable(ArrayList<Integer> local, ArrayList<Integer> sender) {
+    		for (int i = 0; i < local.size(); i++) {
+    			if (local.get(i) + 1 > sender.get(i))
+    				return false;
+    		}    		
+    		return true;
+    }
+    public static boolean rejectable(ArrayList<Integer> local, ArrayList<Integer> sender) {
+	    	for (int i = 0; i < local.size(); i++) {
+			if (local.get(i) + 1 > sender.get(i))
+				return true;
+		}  
+	    	return false;
+    }
+
     
 }
