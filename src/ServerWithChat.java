@@ -41,8 +41,9 @@ public class ServerWithChat
             System.out.println("Creating a new handler for this client...");
  
             // Create a new handler object for handling this request.
-            ClientHandlerChat mtch = new ClientHandlerChat(s,"client " + i, dis, dos);
- 
+            ClientHandlerChat mtch = new ClientHandlerChat(s,"Process " + i, dis, dos);
+            
+            dos.writeUTF("Initialize Process " + i);
             // Create a new Thread with this object.
             Thread t = new Thread(mtch);
              
@@ -95,10 +96,8 @@ class ClientHandlerChat implements Runnable
             {
                 // receive the string
                 received = dis.readUTF();
-                
-                
-                
-                System.out.println(received);
+                                               
+                System.out.println("Server receive message :" + received);
                  
                 if(received.equals("logout")){
                     this.isloggedin=false;
@@ -113,16 +112,16 @@ class ClientHandlerChat implements Runnable
  
                 // search for the recipient in the connected devices list.
                 // ar is the vector storing client of active users
-                
+                String[] strArr = received.split(";");
+                String trueMessage = strArr[2];
                 for (ClientHandlerChat mc : ServerWithChat.ar) 
                 {
                     // if the recipient is found, write on its
                     // output stream
                     if (mc.isloggedin==true) 
                     {
-                    		
-                        
-                        mc.dos.writeUTF(this.name+" : "+received);
+    
+                        mc.dos.writeUTF(this.name+" : "+trueMessage);
 //                        break;
                     }
                 }
